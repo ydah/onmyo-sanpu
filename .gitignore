@@ -1,0 +1,9 @@
+onmyo
+src/*.o
+
+test/cases/*.out.tmp
+test/cases/*.err.tmp
+
+.DS_Store
+*.swp
+*.swo
