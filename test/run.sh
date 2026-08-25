@@ -17,6 +17,7 @@ for fu in "$CASES"/*.fu; do
   exit_file="$CASES/$name.exit"
   out="$CASES/$name.out.tmp"
   err="$CASES/$name.err.tmp"
+  expected_err="$CASES/$name.err.expected"
 
   expected_code=0
   if [ -f "$exit_file" ]; then
@@ -35,6 +36,9 @@ for fu in "$CASES"/*.fu; do
     fail=1
   elif ! diff -u "$expected" "$out"; then
     echo "FAIL $name: output differs"
+    fail=1
+  elif [ -f "$expected_err" ] && ! diff -u "$expected_err" "$err"; then
+    echo "FAIL $name: error output differs"
     fail=1
   else
     echo "PASS $name"

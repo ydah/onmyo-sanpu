@@ -437,7 +437,7 @@ static void reject_old_tokens(const TokenArray *tokens) {
     switch (token->kind) {
     case T_OLD_KOSHI: message = "『蠱し』は廃されたり。『乗じ』を用ゐよ"; break;
     case T_OLD_KOTONARI: message = "『異なり』は廃されたり。『同じからず』を用ゐよ"; break;
-    case T_OLD_MASARU_KA_ONAJIKU: message = "『勝るか同じく』は廃されたり。『勝らず』を用ゐよ"; break;
+    case T_OLD_MASARU_KA_ONAJIKU: message = "『勝るか同じく』は廃されたり。『劣らず』を用ゐよ"; break;
     case T_OLD_OTORU_KA_ONAJIKU: message = "『劣るか同じく』は廃されたり。『勝らず』を用ゐよ"; break;
     case T_OLD_NO_GYOHO: message = "『之行法』は廃されたり。『と申す行法』を用ゐよ"; break;
     case T_OLD_YORI_FROM:

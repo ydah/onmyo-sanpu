@@ -18,10 +18,16 @@ jobs:
         include:
           - os: ubuntu-latest
             cc: gcc
+            cflags: -std=c11 -Wall -Wextra -Werror -O2
           - os: ubuntu-latest
             cc: clang
+            cflags: -std=c11 -Wall -Wextra -Werror -O2
           - os: macos-latest
             cc: clang
+            cflags: -std=c11 -Wall -Wextra -Werror -O2
+          - os: ubuntu-latest
+            cc: clang
+            cflags: -std=c11 -Wall -Wextra -Werror -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer
 
     steps:
       - name: Checkout
@@ -33,6 +39,12 @@ jobs:
           make
         env:
           CC: ${{ matrix.cc }}
+          CFLAGS: ${{ matrix.cflags }}
 
       - name: Test
         run: ./test/run.sh
+
+      - name: Lint (旧語の混入検査)
+        run: |
+          if grep -Rn '蠱し\|異なり\|勝るか同じく\|劣るか同じく\|之行法\|『主』' examples README.md; then exit 1; fi
+          if grep -Rn --include='*.fu' --exclude='tatari_old_*' '蠱し\|異なり\|勝るか同じく\|劣るか同じく\|之行法\|『主』' test/cases; then exit 1; fi
