@@ -47,4 +47,4 @@ jobs:
       - name: Lint (構文境界の検査)
         run: |
           if grep -Rn '[「」『』〔〕〘〙]' examples README.md; then exit 1; fi
-          if grep -Rn --include='*.fu' --exclude='tatari_invalid_boundary.fu' '[「」『』〔〕〘〙]' test/cases; then exit 1; fi
+          if grep -Rn --include='*.fu' '[「」『』〔〕〘〙]' test/cases; then exit 1; fi

@@ -90,12 +90,16 @@ void tok_array_free(TokenArray *array) {
 }
 
 void tok_print(const Token *token) {
+  if (token->kind == T_EOF) {
+    printf("%d:%d EOF\n", token->line, token->col);
+    return;
+  }
   printf("%d:%d %-24s", token->line, token->col, tok_kind_name(token->kind));
   if (token->kind == T_INT) {
     printf(" %lld", token->ival);
   } else if (token->kind == T_STR || token->kind == T_NAME || token->kind == T_SHIKIGAMI_NAME) {
     printf(" %s", token->sval);
-  } else if (token->kind != T_EOF) {
+  } else {
     printf(" %.*s", (int)token->len, token->lexeme);
   }
   putchar('\n');

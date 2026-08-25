@@ -94,5 +94,5 @@ make test
 - `examples/fizzbuzz.fu`: 自一至百唱之、占三五徴。
 - `examples/kaijo.fu`: 遞修己法、献階乗。
 - `examples/hibo.fu`: 以反閇唱斐波那契列。
-- `examples/kekkai.fu`: 示結界之内外。
-- `examples/henbai.fu`: 示歩及其止。
+- `examples/kekkai.fu`: 示結界之内外及式神之放免。
+- `examples/henbai.fu`: 示歩及其止次。

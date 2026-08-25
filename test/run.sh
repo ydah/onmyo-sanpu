@@ -47,7 +47,8 @@ for fu in "$CASES"/*.fu; do
   rm -f "$out" "$err"
 done
 
-if "$ONMYO" --tokens "$ROOT/examples/fizzbuzz.fu" > "$CASES/tokens.out.tmp" 2> "$CASES/tokens.err.tmp"; then
+if "$ONMYO" --tokens "$CASES/lex_taiin.fu" > "$CASES/tokens.out.tmp" 2> "$CASES/tokens.err.tmp" &&
+   diff -u "$CASES/cli_tokens.expected" "$CASES/tokens.out.tmp"; then
   echo "PASS cli_tokens"
 else
   echo "FAIL cli_tokens"
@@ -55,7 +56,8 @@ else
 fi
 rm -f "$CASES/tokens.out.tmp" "$CASES/tokens.err.tmp"
 
-if "$ONMYO" --ast "$ROOT/examples/kaijo.fu" > "$CASES/ast.out.tmp" 2> "$CASES/ast.err.tmp"; then
+if "$ONMYO" --ast "$CASES/chain.fu" > "$CASES/ast.out.tmp" 2> "$CASES/ast.err.tmp" &&
+   diff -u "$CASES/cli_ast.expected" "$CASES/ast.out.tmp"; then
   echo "PASS cli_ast"
 else
   echo "FAIL cli_ast"
