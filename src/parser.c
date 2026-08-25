@@ -3,7 +3,6 @@
 #include "tatari.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 typedef struct {
   const TokenArray *tokens;
@@ -193,8 +192,6 @@ static Expr *parse_primary(Parser *parser) {
       advance(parser);
       return ast_expr_call(token->sval, NULL, 0, token->line, token->col);
     }
-    if (strcmp(token->sval, "陰") == 0 || strcmp(token->sval, "陽") == 0)
-      tatari_fatal(2, token->line, token->col, "陰陽は数の符なり。真偽には吉凶を用ゐよ");
     tatari_fatal(2, token->line, token->col,
                  "式神の名は十二天将・十干・十二支に限る。『%s』は在らず", token->sval);
   default:
@@ -429,7 +426,6 @@ static void parse_block_until(Parser *parser, StmtVec *body, const TokKind *term
 
 static Rite *parse_rite(Parser *parser) {
   const Token *name = consume_rite_name(parser);
-  if (strcmp(name->sval, "主") == 0) tatari_fatal(2, name->line, name->col, "入口の行法は『開白』なり");
   consume(parser, T_TO_MOSU_GYOHO, "行法には『と申す行法』が要る");
   StrVec params = {0};
   if (!check(parser, T_SHU_SURUNI)) {
@@ -449,30 +445,7 @@ static Rite *parse_rite(Parser *parser) {
   return ast_rite(name->sval, params.items, params.count, body.items, body.count, name->line, name->col);
 }
 
-static void reject_old_tokens(const TokenArray *tokens) {
-  for (int i = 0; i < tokens->count; i++) {
-    const Token *token = &tokens->items[i];
-    const char *message = NULL;
-    switch (token->kind) {
-    case T_OLD_KOSHI: message = "『蠱し』は廃されたり。『乗じ』を用ゐよ"; break;
-    case T_OLD_KOTONARI: message = "『異なり』は廃されたり。『同じからず』を用ゐよ"; break;
-    case T_OLD_MASARU_KA_ONAJIKU: message = "『勝るか同じく』は廃されたり。『劣らず』を用ゐよ"; break;
-    case T_OLD_OTORU_KA_ONAJIKU: message = "『劣るか同じく』は廃されたり。『勝らず』を用ゐよ"; break;
-    case T_OLD_NO_GYOHO: message = "『之行法』は廃されたり。『と申す行法』を用ゐよ"; break;
-    case T_OLD_YORI_FROM:
-    case T_OLD_ITARU:
-    case T_OLD_AYUMI:
-      message = "反閇文は『式神貴人をして X より Y に至るまで 反閇せしむ』と書け";
-      break;
-    case T_OLD_HAN: message = "負の符は『陰』なり。『反』は廃されたり"; break;
-    default: break;
-    }
-    if (message != NULL) tatari_fatal(2, token->line, token->col, "%s", message);
-  }
-}
-
 Program *parse_program(const TokenArray *tokens) {
-  reject_old_tokens(tokens);
   Parser parser = {tokens, 0, 0, T_EOF};
   RiteVec rites = {0};
   while (!check(&parser, T_SHICCHI_JOJU)) {

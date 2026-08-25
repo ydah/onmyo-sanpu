@@ -44,9 +44,7 @@ jobs:
       - name: Test
         run: ./test/run.sh
 
-      - name: Lint (括弧と旧語の混入検査)
+      - name: Lint (構文境界の検査)
         run: |
           if grep -Rn '[「」『』〔〕〘〙]' examples README.md; then exit 1; fi
-          if grep -Rn --include='*.fu' --exclude='tatari_old_*' --exclude='tatari_kekkai_bracket.fu' '[「」『』〔〕〘〙]' test/cases; then exit 1; fi
-          if grep -Rn '蠱し\|異なり\|勝るか同じく\|劣るか同じく\|之行法\|『主』' examples README.md; then exit 1; fi
-          if grep -Rn --include='*.fu' --exclude='tatari_old_*' '蠱し\|異なり\|勝るか同じく\|劣るか同じく\|之行法\|『主』' test/cases; then exit 1; fi
+          if grep -Rn --include='*.fu' --exclude='tatari_invalid_boundary.fu' '[「」『』〔〕〘〙]' test/cases; then exit 1; fi

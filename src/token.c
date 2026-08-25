@@ -66,15 +66,6 @@ const char *tok_kind_name(TokKind kind) {
   case T_KYO_VOID: return "虚";
   case T_HARAUNI_KEGARE_NAKU: return "祓ふに穢れ無く";
   case T_KYUKYU: return "急急如律令";
-  case T_OLD_NO_GYOHO: return "之行法";
-  case T_OLD_KOSHI: return "蠱し";
-  case T_OLD_KOTONARI: return "異なり";
-  case T_OLD_MASARU_KA_ONAJIKU: return "勝るか同じく";
-  case T_OLD_OTORU_KA_ONAJIKU: return "劣るか同じく";
-  case T_OLD_YORI_FROM: return "自";
-  case T_OLD_ITARU: return "至";
-  case T_OLD_AYUMI: return "歩み";
-  case T_OLD_HAN: return "反";
   case T_EOF: return "EOF";
   }
   return "?";

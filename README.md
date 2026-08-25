@@ -87,7 +87,7 @@ make
 make test
 ```
 
-其試驗所驗、字句境、式神名、格支配、受、連鎖、界、反閇、歩制御、短絡、開白、移行祟、并 `--tokens`、`--ast` 起否也。
+其試驗所驗、字句境、式神名、格支配、受、連鎖、界、反閇、歩制御、短絡、開白、并 `--tokens`、`--ast` 起否也。
 
 ## 例符
 
@@ -96,14 +96,3 @@ make test
 - `examples/hibo.fu`: 以反閇唱斐波那契列。
 - `examples/kekkai.fu`: 示結界之内外。
 - `examples/henbai.fu`: 示歩及其止。
-
-## 自 v1 移 v2 之法
-
-先以移行具觀其差、而後書入。
-
-```sh
-tools/aratame.sh old.fu
-tools/aratame.sh --write old.fu
-```
-
-既定値爲 dry-run。具唯機械可定之旧式自動改之、文脈を要する所には `註 要確認` を附す。詳細見 `docs/文法設計.md`。

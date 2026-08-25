@@ -11,8 +11,6 @@ static const Keyword KEYWORDS[] = {
   {"祓ふに穢れ無く", T_HARAUNI_KEGARE_NAKU},
   {"限り反閇せしむ", T_KAGIRI_HENBAI},
   {"次の歩に移り", T_TSUGI_NO_HO},
-  {"勝るか同じく", T_OLD_MASARU_KA_ONAJIKU},
-  {"劣るか同じく", T_OLD_OTORU_KA_ONAJIKU},
   {"と申す行法", T_TO_MOSU_GYOHO},
   {"に至るまで", T_NI_ITARU_MADE},
   {"反閇を止め", T_HENBAI_WO_TOME},
@@ -30,10 +28,8 @@ static const Keyword KEYWORDS[] = {
   {"勝らず", T_MASARAZU},
   {"劣らず", T_OTORAZU},
   {"占ふに", T_URANAUNI},
-  {"之行法", T_OLD_NO_GYOHO},
   {"賜りて", T_TAMAWARITE},
   {"同じく", T_ONAJIKU},
-  {"異なり", T_OLD_KOTONARI},
   {"或いは", T_ARUIWA},
   {"をして", T_WOSHITE},
   {"結願", T_KECHIGAN},
@@ -48,7 +44,6 @@ static const Keyword KEYWORDS[] = {
   {"生じ", T_SHOJI},
   {"剋し", T_KOKUSHI},
   {"乗じ", T_JOJI},
-  {"蠱し", T_OLD_KOSHI},
   {"祓ひ", T_HARAI},
   {"穢し", T_KEGASHI},
   {"勝り", T_MASARI},
@@ -59,18 +54,14 @@ static const Keyword KEYWORDS[] = {
   {"より", T_YORI},
   {"これ", T_KORE},
   {"とし", T_TOSHI},
-  {"歩み", T_OLD_AYUMI},
   {"吉", T_KICHI},
   {"凶", T_KYO_BAD},
   {"虚", T_KYO_VOID},
-  {"自", T_OLD_YORI_FROM},
-  {"至", T_OLD_ITARU},
   {"と", T_TO},
   {"を", T_WO},
   {"に", T_NI},
   {"ば", T_BA},
   {"は", T_WA},
-  {"反", T_OLD_HAN},
 };
 
 static const char *SHIKIGAMI_NAMES[] = {
@@ -231,6 +222,13 @@ static Token shikigami_token(const char *src, size_t len, size_t *pos, int *line
   return token;
 }
 
+static int invalid_character_at(const char *src, size_t len, size_t pos) {
+  static const char *INVALID[] = {"「", "」", "『", "』", "〔", "〕", "〘", "〙"};
+  size_t count = sizeof(INVALID) / sizeof(INVALID[0]);
+  for (size_t i = 0; i < count; i++) if (starts_with(src, len, pos, INVALID[i])) return 1;
+  return 0;
+}
+
 static int name_boundary(const char *src, size_t len, size_t pos) {
   if (pos >= len) return 1;
   unsigned char ch = (unsigned char)src[pos];
@@ -238,6 +236,7 @@ static int name_boundary(const char *src, size_t len, size_t pos) {
   if (starts_with(src, len, pos, "　") || starts_with(src, len, pos, "、") ||
       starts_with(src, len, pos, "。") || starts_with(src, len, pos, "・") ||
       starts_with(src, len, pos, "註") || starts_with(src, len, pos, "阿")) return 1;
+  if (invalid_character_at(src, len, pos)) return 1;
   if (is_number_start(src, len, pos) || keyword_at(src, len, pos) != NULL || shikigami_at(src, len, pos) != NULL) return 1;
   return 0;
 }
@@ -262,17 +261,6 @@ static Token name_token(const char *src, size_t len, size_t *pos, int *line, int
   return token;
 }
 
-static void reject_old_boundary(const char *src, size_t len, size_t pos, int line, int col) {
-  if (starts_with(src, len, pos, "「") || starts_with(src, len, pos, "」"))
-    tatari_fatal(2, line, col, "文字列は 阿 に始まり 吽 に終はる。鉤括弧は廃されたり");
-  if (starts_with(src, len, pos, "『") || starts_with(src, len, pos, "』"))
-    tatari_fatal(2, line, col, "名に括弧を付くべからず。式神は十二天将、行法は無印なり");
-  if (starts_with(src, len, pos, "〔") || starts_with(src, len, pos, "〕"))
-    tatari_fatal(2, line, col, "括りは廃されたり。式神に憑かせて分かつべし");
-  if (starts_with(src, len, pos, "〘") || starts_with(src, len, pos, "〙"))
-    tatari_fatal(2, line, col, "注釈は 註 より行末までなり");
-}
-
 TokenArray lex_source(const char *src, size_t len) {
   keywords_assert_ordered();
   TokenArray tokens = {0};
@@ -282,7 +270,7 @@ TokenArray lex_source(const char *src, size_t len) {
   while (pos < len) {
     skip_ignored(src, len, &pos, &line, &col);
     if (pos >= len) break;
-    reject_old_boundary(src, len, pos, line, col);
+    if (invalid_character_at(src, len, pos)) tatari_fatal(2, line, col, "字句に用ゐ得ぬ文字なり");
     if (starts_with(src, len, pos, "阿")) {
       tok_array_push(&tokens, string_token(src, len, &pos, &line, &col));
       continue;
