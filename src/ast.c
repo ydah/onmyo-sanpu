@@ -7,6 +7,7 @@
 static Expr *new_expr(ExprKind kind, int line, int col) {
   Expr *expr = onmyo_xcalloc(1, sizeof(Expr));
   expr->kind = kind;
+  expr->primary = kind == E_INT || kind == E_STR || kind == E_BOOL || kind == E_KYO || kind == E_VAR;
   expr->line = line;
   expr->col = col;
   return expr;
@@ -98,6 +99,12 @@ Stmt *ast_stmt_takusen(const char *name, int line, int col) {
   return stmt;
 }
 
+Stmt *ast_stmt_release(const char *name, int line, int col) {
+  Stmt *stmt = new_stmt(S_RELEASE, line, col);
+  stmt->as.release.name = onmyo_xstrdup(name);
+  return stmt;
+}
+
 Stmt *ast_stmt_print(Expr *expr, int line, int col) {
   Stmt *stmt = new_stmt(S_PRINT, line, col);
   stmt->as.print_stmt.expr = expr;
@@ -134,6 +141,17 @@ Stmt *ast_stmt_while(Expr *cond, Stmt **body, int nbody, int line, int col) {
   stmt->as.while_stmt.body = body;
   stmt->as.while_stmt.nbody = nbody;
   return stmt;
+}
+
+Stmt *ast_stmt_block(StmtKind kind, Stmt **body, int nbody, int line, int col) {
+  Stmt *stmt = new_stmt(kind, line, col);
+  stmt->as.block_stmt.body = body;
+  stmt->as.block_stmt.nbody = nbody;
+  return stmt;
+}
+
+Stmt *ast_stmt_flow(StmtKind kind, int line, int col) {
+  return new_stmt(kind, line, col);
 }
 
 Stmt *ast_stmt_call(Expr *call, int line, int col) {
@@ -224,6 +242,9 @@ static void free_stmt(Stmt *stmt) {
   case S_TAKUSEN:
     free(stmt->as.takusen.name);
     break;
+  case S_RELEASE:
+    free(stmt->as.release.name);
+    break;
   case S_PRINT:
     free_expr(stmt->as.print_stmt.expr);
     break;
@@ -247,6 +268,12 @@ static void free_stmt(Stmt *stmt) {
   case S_WHILE:
     free_expr(stmt->as.while_stmt.cond);
     free_block(stmt->as.while_stmt.body, stmt->as.while_stmt.nbody);
+    break;
+  case S_KEKKAI:
+    free_block(stmt->as.block_stmt.body, stmt->as.block_stmt.nbody);
+    break;
+  case S_BREAK:
+  case S_CONTINUE:
     break;
   case S_CALLSTMT:
     free_expr(stmt->as.call_stmt.call);
@@ -293,6 +320,9 @@ static void print_stmt(FILE *out, const Stmt *stmt, int depth) {
   case S_TAKUSEN:
     fprintf(out, "託宣 %s\n", stmt->as.takusen.name);
     break;
+  case S_RELEASE:
+    fprintf(out, "放免 %s\n", stmt->as.release.name);
+    break;
   case S_PRINT:
     fputs("唱\n", out);
     print_expr(out, stmt->as.print_stmt.expr, depth + 1);
@@ -327,6 +357,16 @@ static void print_stmt(FILE *out, const Stmt *stmt, int depth) {
     print_expr(out, stmt->as.while_stmt.cond, depth + 1);
     for (int i = 0; i < stmt->as.while_stmt.nbody; i++) print_stmt(out, stmt->as.while_stmt.body[i], depth + 1);
     break;
+  case S_KEKKAI:
+    fputs("結界\n", out);
+    for (int i = 0; i < stmt->as.block_stmt.nbody; i++) print_stmt(out, stmt->as.block_stmt.body[i], depth + 1);
+    break;
+  case S_BREAK:
+    fputs("歩止\n", out);
+    break;
+  case S_CONTINUE:
+    fputs("歩次\n", out);
+    break;
   case S_CALLSTMT:
     fputs("呼出文\n", out);
     print_expr(out, stmt->as.call_stmt.call, depth + 1);
@@ -352,7 +392,7 @@ static void print_expr(FILE *out, const Expr *expr, int depth) {
     fprintf(out, "真言 \"%s\"\n", expr->as.str_value);
     break;
   case E_BOOL:
-    fprintf(out, "真偽 %s\n", expr->as.bool_value ? "陽" : "陰");
+    fprintf(out, "卦 %s\n", expr->as.bool_value ? "吉" : "凶");
     break;
   case E_KYO:
     fputs("虚\n", out);

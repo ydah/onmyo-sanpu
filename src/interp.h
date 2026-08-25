@@ -4,7 +4,7 @@
 #include "ast.h"
 #include "value.h"
 
-typedef enum { FLOW_NORMAL, FLOW_RETURN } Flow;
+typedef enum { FLOW_NORMAL, FLOW_RETURN, FLOW_BREAK, FLOW_CONTINUE } Flow;
 
 typedef struct {
   Flow flow;

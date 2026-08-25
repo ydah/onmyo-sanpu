@@ -12,11 +12,15 @@ typedef struct Rite Rite;
 typedef enum {
   S_SUMMON,
   S_ASSIGN,
+  S_RELEASE,
   S_TAKUSEN,
   S_PRINT,
   S_IF,
   S_FOR,
   S_WHILE,
+  S_KEKKAI,
+  S_BREAK,
+  S_CONTINUE,
   S_CALLSTMT,
   S_RETURN
 } StmtKind;
@@ -35,6 +39,7 @@ typedef enum {
 
 struct Expr {
   ExprKind kind;
+  int primary;
   int line;
   int col;
   char *int_lexeme;
@@ -78,6 +83,9 @@ struct Stmt {
       char *name;
     } takusen;
     struct {
+      char *name;
+    } release;
+    struct {
       Expr *expr;
     } print_stmt;
     struct {
@@ -101,6 +109,10 @@ struct Stmt {
       Stmt **body;
       int nbody;
     } while_stmt;
+    struct {
+      Stmt **body;
+      int nbody;
+    } block_stmt;
     struct {
       Expr *call;
     } call_stmt;
@@ -138,12 +150,15 @@ Expr *ast_expr_call(const char *name, Expr **args, int nargs, int line, int col)
 
 Stmt *ast_stmt_bind(StmtKind kind, const char *name, Expr *expr, int require_existing, int line, int col);
 Stmt *ast_stmt_takusen(const char *name, int line, int col);
+Stmt *ast_stmt_release(const char *name, int line, int col);
 Stmt *ast_stmt_print(Expr *expr, int line, int col);
 Stmt *ast_stmt_if(Expr **conds, Stmt ***blocks, int *block_counts, int nbranch,
                   Stmt **else_block, int nelse, int line, int col);
 Stmt *ast_stmt_for(Expr *from, Expr *to, Expr *step, const char *var,
                    Stmt **body, int nbody, int line, int col);
 Stmt *ast_stmt_while(Expr *cond, Stmt **body, int nbody, int line, int col);
+Stmt *ast_stmt_block(StmtKind kind, Stmt **body, int nbody, int line, int col);
+Stmt *ast_stmt_flow(StmtKind kind, int line, int col);
 Stmt *ast_stmt_call(Expr *call, int line, int col);
 Stmt *ast_stmt_return(Expr *expr, int line, int col);
 Rite *ast_rite(const char *name, char **params, int nparams, Stmt **body, int nbody, int line, int col);

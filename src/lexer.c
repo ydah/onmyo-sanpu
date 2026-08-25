@@ -13,52 +13,79 @@ static const Keyword KEYWORDS[] = {
   {"然らずして占ふに", T_SHIKARAZUSHITE_URANAUNI},
   {"祓ふに穢れ無く", T_HARAUNI_KEGARE_NAKU},
   {"限り反閇せしむ", T_KAGIRI_HENBAI},
-  {"勝るか同じく", T_MASARU_KA_ONAJIKU},
-  {"劣るか同じく", T_OTORU_KA_ONAJIKU},
+  {"次の歩に移り", T_TSUGI_NO_HO},
+  {"勝るか同じく", T_OLD_MASARU_KA_ONAJIKU},
+  {"劣るか同じく", T_OLD_OTORU_KA_ONAJIKU},
+  {"と申す行法", T_TO_MOSU_GYOHO},
+  {"に至るまで", T_NI_ITARU_MADE},
+  {"反閇を止め", T_HENBAI_WO_TOME},
+  {"同じからず", T_ONAJIKARAZU},
   {"託宣を仰ぎ", T_TAKUSEN},
   {"急急如律令", T_KYUKYU},
   {"反閇せしむ", T_HENBAI},
   {"憑かせしむ", T_TSUKASESHIMU},
+  {"結界を張り", T_KEKKAI_WO_HARI},
   {"悉地成就", T_SHICCHI_JOJU},
   {"修するに", T_SHU_SURUNI},
   {"修せしむ", T_SHU_SESHIMU},
   {"然らずば", T_SHIKARAZUBA},
   {"にあらず", T_NIARAZU},
+  {"勝らず", T_MASARAZU},
+  {"劣らず", T_OTORAZU},
   {"占ふに", T_URANAUNI},
-  {"之行法", T_NO_GYOHO},
+  {"之行法", T_OLD_NO_GYOHO},
   {"賜りて", T_TAMAWARITE},
+  {"同じく", T_ONAJIKU},
+  {"異なり", T_OLD_KOTONARI},
+  {"或いは", T_ARUIWA},
+  {"をして", T_WOSHITE},
   {"結願", T_KECHIGAN},
   {"式神", T_SHIKIGAMI},
   {"喚び", T_YOBI},
   {"改め", T_ARATAME},
+  {"放ち", T_HANACHI},
   {"献じ", T_KENJI},
   {"以て", T_MOTTE},
-  {"歩み", T_AYUMI},
+  {"歩を", T_HO_WO},
   {"唱へ", T_TONAE},
   {"生じ", T_SHOJI},
   {"剋し", T_KOKUSHI},
-  {"蠱し", T_KOSHI},
+  {"乗じ", T_JOJI},
+  {"蠱し", T_OLD_KOSHI},
   {"祓ひ", T_HARAI},
   {"穢し", T_KEGASHI},
-  {"同じく", T_ONAJIKU},
-  {"異なり", T_KOTONARI},
   {"勝り", T_MASARI},
   {"劣り", T_OTORI},
   {"且つ", T_KATSU},
-  {"或いは", T_ARUIWA},
+  {"更に", T_SARANI},
   {"にて", T_NITE},
   {"より", T_YORI},
-  {"陽", T_YO},
-  {"陰", T_IN},
-  {"虚", T_KYO},
-  {"自", T_YORI_FROM},
-  {"至", T_ITARU},
+  {"これ", T_KORE},
+  {"とし", T_TOSHI},
+  {"歩み", T_OLD_AYUMI},
+  {"陽", T_YO_SIGN},
+  {"陰", T_IN_SIGN},
+  {"吉", T_KICHI},
+  {"凶", T_KYO_BAD},
+  {"虚", T_KYO_VOID},
+  {"自", T_OLD_YORI_FROM},
+  {"至", T_OLD_ITARU},
   {"と", T_TO},
   {"を", T_WO},
   {"に", T_NI},
   {"ば", T_BA},
-  {"反", T_HAN},
+  {"は", T_WA},
+  {"反", T_OLD_HAN},
 };
+
+static void keywords_assert_ordered(void) {
+  size_t count = sizeof(KEYWORDS) / sizeof(KEYWORDS[0]);
+  for (size_t i = 1; i < count; i++) {
+    if (strlen(KEYWORDS[i - 1].text) < strlen(KEYWORDS[i].text)) {
+      tatari_fatal(3, 0, 0, "語彙表の序が乱れたり");
+    }
+  }
+}
 
 static int utf8_len(unsigned char ch) {
   if (ch < 0x80) return 1;
@@ -106,8 +133,8 @@ static int match_digit(const char *src, size_t len, size_t pos, int *digit, size
 }
 
 static int is_number_start(const char *src, size_t len, size_t pos) {
-  while (starts_with(src, len, pos, "反")) {
-    pos += strlen("反");
+  while (starts_with(src, len, pos, "陰") || starts_with(src, len, pos, "陽")) {
+    pos += strlen("陰");
   }
   int digit = 0;
   size_t dlen = 0;
@@ -195,9 +222,9 @@ static Token lex_number(const char *src, size_t len, size_t *pos, int *line, int
   int negative = 0;
   long long value = 0;
 
-  while (starts_with(src, len, *pos, "反")) {
-    negative = !negative;
-    advance_bytes(src, len, pos, line, col, strlen("反"));
+  while (starts_with(src, len, *pos, "陰") || starts_with(src, len, *pos, "陽")) {
+    if (starts_with(src, len, *pos, "陰")) negative = !negative;
+    advance_bytes(src, len, pos, line, col, strlen("陰"));
   }
 
   int saw_digit = 0;
@@ -234,6 +261,7 @@ static int lex_keyword(const char *src, size_t len, size_t *pos, int *line, int 
 }
 
 TokenArray lex_source(const char *src, size_t len) {
+  keywords_assert_ordered();
   TokenArray tokens = {0};
   size_t pos = 0;
   int line = 1;

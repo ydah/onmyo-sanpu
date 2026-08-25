@@ -22,7 +22,6 @@ Value val_copy(const Value *value);
 void val_free(Value *value);
 
 Value val_binary(TokKind op, const Value *lhs, const Value *rhs, int line, int col);
-Value val_logic(TokKind op, const Value *lhs, const Value *rhs, int line, int col);
 Value val_not(const Value *value, int line, int col);
 int val_as_bool(const Value *value, int line, int col);
 long long val_as_int(const Value *value, int line, int col);

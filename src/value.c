@@ -67,20 +67,31 @@ void val_free(Value *value) {
   value->b = 0;
 }
 
-static void type_tatari(int line, int col, const char *op) {
-  tatari_fatal(1, line, col, "%sの型が合わぬ", op);
+static const char *vkind_name(VKind kind) {
+  switch (kind) {
+  case V_INT: return "籌";
+  case V_STR: return "真言";
+  case V_BOOL: return "卦";
+  case V_KYO: return "虚";
+  }
+  return "不明";
+}
+
+static void type_tatari(int line, int col, const char *op, const Value *lhs, const Value *rhs) {
+  tatari_fatal(1, line, col, "『%s』は %s と %s を結び得ず",
+               op, vkind_name(lhs->kind), vkind_name(rhs->kind));
 }
 
 long long val_as_int(const Value *value, int line, int col) {
   if (value->kind != V_INT) {
-    tatari_fatal(1, line, col, "整数でなければならぬ");
+    tatari_fatal(1, line, col, "籌にあらず");
   }
   return value->i;
 }
 
 int val_as_bool(const Value *value, int line, int col) {
   if (value->kind != V_BOOL) {
-    tatari_fatal(1, line, col, "真偽でなければならぬ");
+    tatari_fatal(1, line, col, "卦にあらず");
   }
   return value->b;
 }
@@ -112,7 +123,7 @@ static int compare_values(const Value *lhs, const Value *rhs, int line, int col)
     if (cmp > 0) return 1;
     return 0;
   }
-  type_tatari(line, col, "比較");
+  type_tatari(line, col, "比較", lhs, rhs);
   return 0;
 }
 
@@ -121,11 +132,11 @@ Value val_binary(TokKind op, const Value *lhs, const Value *rhs, int line, int c
   case T_SHOJI:
     if (lhs->kind == V_INT && rhs->kind == V_INT) return val_int(lhs->i + rhs->i);
     if (lhs->kind == V_STR && rhs->kind == V_STR) return val_concat(lhs, rhs);
-    type_tatari(line, col, "生じ");
+    type_tatari(line, col, "生じ", lhs, rhs);
     break;
   case T_KOKUSHI:
     return val_int(val_as_int(lhs, line, col) - val_as_int(rhs, line, col));
-  case T_KOSHI:
+  case T_JOJI:
     return val_int(val_as_int(lhs, line, col) * val_as_int(rhs, line, col));
   case T_HARAI: {
     long long right = val_as_int(rhs, line, col);
@@ -143,7 +154,7 @@ Value val_binary(TokKind op, const Value *lhs, const Value *rhs, int line, int c
     if (lhs->kind == V_BOOL) return val_bool(lhs->b == rhs->b);
     if (lhs->kind == V_STR) return val_bool(strcmp(lhs->s, rhs->s) == 0);
     return val_bool(1);
-  case T_KOTONARI:
+  case T_ONAJIKARAZU:
     if (lhs->kind != rhs->kind) return val_bool(1);
     if (lhs->kind == V_INT) return val_bool(lhs->i != rhs->i);
     if (lhs->kind == V_BOOL) return val_bool(lhs->b != rhs->b);
@@ -153,22 +164,13 @@ Value val_binary(TokKind op, const Value *lhs, const Value *rhs, int line, int c
     return val_bool(compare_values(lhs, rhs, line, col) > 0);
   case T_OTORI:
     return val_bool(compare_values(lhs, rhs, line, col) < 0);
-  case T_MASARU_KA_ONAJIKU:
-    return val_bool(compare_values(lhs, rhs, line, col) >= 0);
-  case T_OTORU_KA_ONAJIKU:
+  case T_MASARAZU:
     return val_bool(compare_values(lhs, rhs, line, col) <= 0);
+  case T_OTORAZU:
+    return val_bool(compare_values(lhs, rhs, line, col) >= 0);
   default:
     tatari_fatal(1, line, col, "未知の演算である");
   }
-  return val_kyo();
-}
-
-Value val_logic(TokKind op, const Value *lhs, const Value *rhs, int line, int col) {
-  int left = val_as_bool(lhs, line, col);
-  int right = val_as_bool(rhs, line, col);
-  if (op == T_KATSU) return val_bool(left && right);
-  if (op == T_ARUIWA) return val_bool(left || right);
-  tatari_fatal(1, line, col, "未知の論理である");
   return val_kyo();
 }
 
@@ -182,7 +184,7 @@ void val_print(FILE *out, const Value *value, int line, int col) {
     fprintf(out, "%lld\n", value->i);
     break;
   case V_BOOL:
-    fputs(value->b ? "陽\n" : "陰\n", out);
+    fputs(value->b ? "吉\n" : "凶\n", out);
     break;
   case V_STR:
     fprintf(out, "%s\n", value->s);

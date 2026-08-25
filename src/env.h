@@ -5,10 +5,11 @@
 
 typedef struct Env Env;
 
-Env *env_new(void);
+Env *env_new(Env *outer);
 void env_free(Env *env);
-void env_bind(Env *env, const char *name, const Value *value);
+int env_declare(Env *env, const char *name, const Value *value);
 int env_assign(Env *env, const char *name, const Value *value);
-Value env_get(const Env *env, const char *name, int line, int col);
+int env_release(Env *env, const char *name);
+Value env_get(Env *env, const char *name, int line, int col);
 
 #endif
