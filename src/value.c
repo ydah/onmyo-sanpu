@@ -2,6 +2,7 @@
 
 #include "tatari.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,26 +128,52 @@ static int compare_values(const Value *lhs, const Value *rhs, int line, int col)
   return 0;
 }
 
+static long long checked_add(long long lhs, long long rhs, int line, int col) {
+  if ((rhs > 0 && lhs > LLONG_MAX - rhs) || (rhs < 0 && lhs < LLONG_MIN - rhs)) {
+    tatari_fatal(1, line, col, "籌が大き過ぎる");
+  }
+  return lhs + rhs;
+}
+
+static long long checked_sub(long long lhs, long long rhs, int line, int col) {
+  if ((rhs > 0 && lhs < LLONG_MIN + rhs) || (rhs < 0 && lhs > LLONG_MAX + rhs)) {
+    tatari_fatal(1, line, col, "籌が大き過ぎる");
+  }
+  return lhs - rhs;
+}
+
+static long long checked_mul(long long lhs, long long rhs, int line, int col) {
+  int overflow = lhs > 0
+      ? (rhs > 0 ? lhs > LLONG_MAX / rhs : rhs < LLONG_MIN / lhs)
+      : (rhs > 0 ? lhs < LLONG_MIN / rhs : lhs != 0 && rhs < LLONG_MAX / lhs);
+  if (overflow) tatari_fatal(1, line, col, "籌が大き過ぎる");
+  return lhs * rhs;
+}
+
 Value val_binary(TokKind op, const Value *lhs, const Value *rhs, int line, int col) {
   switch (op) {
   case T_SHOJI:
-    if (lhs->kind == V_INT && rhs->kind == V_INT) return val_int(lhs->i + rhs->i);
+    if (lhs->kind == V_INT && rhs->kind == V_INT) return val_int(checked_add(lhs->i, rhs->i, line, col));
     if (lhs->kind == V_STR && rhs->kind == V_STR) return val_concat(lhs, rhs);
     type_tatari(line, col, "生じ", lhs, rhs);
     break;
   case T_KOKUSHI:
-    return val_int(val_as_int(lhs, line, col) - val_as_int(rhs, line, col));
+    return val_int(checked_sub(val_as_int(lhs, line, col), val_as_int(rhs, line, col), line, col));
   case T_JOJI:
-    return val_int(val_as_int(lhs, line, col) * val_as_int(rhs, line, col));
+    return val_int(checked_mul(val_as_int(lhs, line, col), val_as_int(rhs, line, col), line, col));
   case T_HARAI: {
     long long right = val_as_int(rhs, line, col);
     if (right == 0) tatari_fatal(1, line, col, "零にて祓ふべからず");
-    return val_int(val_as_int(lhs, line, col) / right);
+    long long left = val_as_int(lhs, line, col);
+    if (left == LLONG_MIN && right == -1) tatari_fatal(1, line, col, "籌が大き過ぎる");
+    return val_int(left / right);
   }
   case T_KEGASHI: {
     long long right = val_as_int(rhs, line, col);
     if (right == 0) tatari_fatal(1, line, col, "零にて穢すべからず");
-    return val_int(val_as_int(lhs, line, col) % right);
+    long long left = val_as_int(lhs, line, col);
+    if (left == LLONG_MIN && right == -1) tatari_fatal(1, line, col, "籌が大き過ぎる");
+    return val_int(left % right);
   }
   case T_ONAJIKU:
     if (lhs->kind != rhs->kind) return val_bool(0);

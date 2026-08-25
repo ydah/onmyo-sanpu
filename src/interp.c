@@ -3,6 +3,7 @@
 #include "env.h"
 #include "tatari.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -192,6 +193,8 @@ static ExecResult exec_stmt(Interp *interp, Env *env, const Stmt *stmt) {
       Flow flow = result.flow;
       val_free(&result.ret);
       if (flow == FLOW_BREAK) break;
+      if ((step > 0 && current > LLONG_MAX - step) ||
+          (step < 0 && current < LLONG_MIN - step)) break;
       current += step;
     }
     env_free(loop_env);

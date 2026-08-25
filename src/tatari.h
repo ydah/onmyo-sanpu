@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-void tatari_fatal(int exit_code, int line, int col, const char *fmt, ...);
+_Noreturn void tatari_fatal(int exit_code, int line, int col, const char *fmt, ...);
 void tatari_set_source(const char *src, size_t len);
 
 void *onmyo_xmalloc(size_t size);

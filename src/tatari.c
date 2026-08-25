@@ -28,7 +28,7 @@ static void print_source_line(int line, int col) {
   fputs("^\n", stderr);
 }
 
-void tatari_fatal(int exit_code, int line, int col, const char *fmt, ...) {
+_Noreturn void tatari_fatal(int exit_code, int line, int col, const char *fmt, ...) {
   va_list ap;
 
   fprintf(stderr, "祟り：");

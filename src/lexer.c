@@ -2,6 +2,7 @@
 
 #include "tatari.h"
 
+#include <limits.h>
 #include <string.h>
 
 typedef struct { const char *text; TokKind kind; } Keyword;
@@ -196,20 +197,26 @@ static Token number_token(const char *src, size_t len, size_t *pos, int *line, i
   int start_line = *line;
   int start_col = *col;
   int negative = 0;
-  long long value = 0;
   while (starts_with(src, len, *pos, "陰") || starts_with(src, len, *pos, "陽")) {
     if (starts_with(src, len, *pos, "陰")) negative = !negative;
     advance_bytes(src, len, pos, line, col, strlen("陰"));
   }
+  unsigned long long value = 0;
+  unsigned long long limit = (unsigned long long)LLONG_MAX + (negative ? 1ULL : 0ULL);
   for (;;) {
     int digit = 0;
     size_t dlen = 0;
     if (!match_digit(src, len, *pos, &digit, &dlen)) break;
-    value = value * 10 + digit;
+    if (value > (limit - (unsigned long long)digit) / 10ULL) {
+      tatari_fatal(2, start_line, start_col, "籌が大き過ぎる");
+    }
+    value = value * 10ULL + (unsigned long long)digit;
     advance_bytes(src, len, pos, line, col, dlen);
   }
   Token token = plain_token(T_INT, src + start, *pos - start, start_line, start_col);
-  token.ival = negative ? -value : value;
+  if (!negative) token.ival = (long long)value;
+  else if (value == (unsigned long long)LLONG_MAX + 1ULL) token.ival = LLONG_MIN;
+  else token.ival = -(long long)value;
   return token;
 }
 
