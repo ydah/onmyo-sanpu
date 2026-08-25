@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
 
   size_t len = 0;
   char *src = read_file(path, &len);
+  tatari_set_source(src, len);
   TokenArray tokens = lex_source(src, len);
 
   if (mode == MODE_TOKENS) {

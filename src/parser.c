@@ -75,6 +75,29 @@ static const Token *consume(Parser *parser, TokKind kind, const char *message) {
   return NULL;
 }
 
+static const Token *consume_shikigami_name(Parser *parser) {
+  if (check(parser, T_SHIKIGAMI_NAME)) return advance(parser);
+  if (check(parser, T_NAME)) {
+    const Token *token = peek(parser);
+    tatari_fatal(2, token->line, token->col,
+                 "式神の名は十二天将・十干・十二支に限る。『%s』は在らず", token->sval);
+  }
+  parse_error(peek(parser), "式神の名は十二天将・十干・十二支に限る");
+  return NULL;
+}
+
+static const Token *consume_rite_name(Parser *parser) {
+  if (check(parser, T_NAME)) return advance(parser);
+  if (check(parser, T_INT)) {
+    const Token *token = peek(parser);
+    tatari_fatal(2, token->line, token->col,
+                 "行法の名に九字を含むべからず。『%.*s』は九なり",
+                 (int)token->len, token->lexeme);
+  }
+  parse_error(peek(parser), "行法の名に語を含むべからず");
+  return NULL;
+}
+
 static void *vec_grow(void *items, int *cap, size_t elem_size) {
   *cap = *cap == 0 ? 8 : *cap * 2;
   return onmyo_xrealloc(items, elem_size * (size_t)*cap);
@@ -105,8 +128,8 @@ static int is_case(TokKind kind) {
 }
 
 static int is_primary_start(TokKind kind) {
-  return kind == T_INT || kind == T_STR || kind == T_NAME || kind == T_KICHI ||
-         kind == T_KYO_BAD || kind == T_KYO_VOID || kind == T_KEKKAI_OPEN;
+  return kind == T_INT || kind == T_STR || kind == T_SHIKIGAMI_NAME || kind == T_KICHI ||
+         kind == T_KYO_BAD || kind == T_KYO_VOID;
 }
 
 static const CaseFrame *find_frame(TokKind pred) {
@@ -162,22 +185,18 @@ static Expr *parse_primary(Parser *parser) {
     return ast_expr_bool(0, token->line, token->col);
   case T_KYO_VOID:
     return ast_expr_kyo(token->line, token->col);
+  case T_SHIKIGAMI_NAME:
+    return ast_expr_var(token->sval, token->line, token->col);
   case T_NAME:
     if (check(parser, T_WO) && peek_n(parser, 1)->kind == T_SHU_SESHIMU) {
       advance(parser);
       advance(parser);
       return ast_expr_call(token->sval, NULL, 0, token->line, token->col);
     }
-    return ast_expr_var(token->sval, token->line, token->col);
-  case T_KEKKAI_OPEN: {
-    TokKind stop = parser->expr_stop;
-    parser->expr_stop = T_EOF;
-    Expr *inner = parse_expr(parser);
-    parser->expr_stop = stop;
-    consume(parser, T_KEKKAI_CLOSE, "結印が閉じられぬ");
-    inner->primary = 1;
-    return inner;
-  }
+    if (strcmp(token->sval, "陰") == 0 || strcmp(token->sval, "陽") == 0)
+      tatari_fatal(2, token->line, token->col, "陰陽は数の符なり。真偽には吉凶を用ゐよ");
+    tatari_fatal(2, token->line, token->col,
+                 "式神の名は十二天将・十干・十二支に限る。『%s』は在らず", token->sval);
   default:
     parse_error(token, "式が求められる");
     return NULL;
@@ -229,7 +248,7 @@ static Expr *parse_logic(Parser *parser) {
     const Token *op = advance(parser);
     if (first == T_EOF) first = op->kind;
     else if (op->kind != first) {
-      tatari_fatal(2, op->line, op->col, "『且つ』と『或いは』を混ずるには結印を要す");
+      tatari_fatal(2, op->line, op->col, "『且つ』と『或いは』を混ずべからず。式神に憑かせて分かつべし");
     }
     lhs = ast_expr_logic(op->kind, lhs, parse_chain(parser), op->line, op->col);
   }
@@ -249,7 +268,7 @@ static Expr *parse_expr(Parser *parser) {
   while (match(parser, T_TO)) expr_vec_push(&args, parse_logic(parser));
   consume_uke(parser, args.items[args.count - 1]);
   consume(parser, T_MOTTE, "呼出には『以て』が要る");
-  const Token *name = consume(parser, T_NAME, "呼び出す行法名が要る");
+  const Token *name = consume_rite_name(parser);
   consume(parser, T_WO, "行法名の後に『を』が要る");
   consume(parser, T_SHU_SESHIMU, "呼出は『修せしむ』で結ぶ");
   return ast_expr_call(name->sval, args.items, args.count, first->line, first->col);
@@ -262,7 +281,7 @@ static int is_term(const Parser *parser, const TokKind *terms, int nterms) {
 
 static Stmt *parse_shikigami(Parser *parser) {
   const Token *start = consume(parser, T_SHIKIGAMI, "式神文が壊れている");
-  const Token *name = consume(parser, T_NAME, "式神名が要る");
+  const Token *name = consume_shikigami_name(parser);
   if (match(parser, T_WOSHITE)) {
     parser->expr_stop = T_YORI;
     Expr *from = parse_expr(parser);
@@ -409,13 +428,13 @@ static void parse_block_until(Parser *parser, StmtVec *body, const TokKind *term
 }
 
 static Rite *parse_rite(Parser *parser) {
-  const Token *name = consume(parser, T_NAME, "行法名が要る");
+  const Token *name = consume_rite_name(parser);
   if (strcmp(name->sval, "主") == 0) tatari_fatal(2, name->line, name->col, "入口の行法は『開白』なり");
   consume(parser, T_TO_MOSU_GYOHO, "行法には『と申す行法』が要る");
   StrVec params = {0};
   if (!check(parser, T_SHU_SURUNI)) {
     for (;;) {
-      const Token *param = consume(parser, T_NAME, "仮引数名が要る");
+      const Token *param = consume_shikigami_name(parser);
       str_vec_push(&params, onmyo_xstrdup(param->sval));
       if (!match(parser, T_TO)) break;
     }
@@ -443,11 +462,9 @@ static void reject_old_tokens(const TokenArray *tokens) {
     case T_OLD_YORI_FROM:
     case T_OLD_ITARU:
     case T_OLD_AYUMI:
-      message = "反閇文は『式神『甲』をして X より Y に至るまで 反閇せしむ』と書け";
+      message = "反閇文は『式神貴人をして X より Y に至るまで 反閇せしむ』と書け";
       break;
     case T_OLD_HAN: message = "負の符は『陰』なり。『反』は廃されたり"; break;
-    case T_IN_SIGN:
-    case T_YO_SIGN: message = "陰陽は数の符なり。真偽には吉凶を用ゐよ"; break;
     default: break;
     }
     if (message != NULL) tatari_fatal(2, token->line, token->col, "%s", message);

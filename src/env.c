@@ -86,6 +86,6 @@ Value env_get(Env *env, const char *name, int line, int col) {
     Entry *entry = find_entry(scope, name);
     if (entry != NULL) return val_copy(&entry->value);
   }
-  tatari_fatal(1, line, col, "式神『%s』は此の界に在らず", name);
+  tatari_fatal(1, line, col, "式神%sは此の界に在らず", name);
   return val_kyo();
 }

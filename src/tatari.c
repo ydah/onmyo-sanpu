@@ -5,6 +5,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const char *source;
+static size_t source_len;
+
+void tatari_set_source(const char *src, size_t len) {
+  source = src;
+  source_len = len;
+}
+
+static void print_source_line(int line, int col) {
+  if (source == NULL || line <= 0 || col <= 0) return;
+  const char *start = source;
+  int current = 1;
+  while ((size_t)(start - source) < source_len && current < line) {
+    if (*start++ == '\n') current++;
+  }
+  if (current != line) return;
+  const char *end = start;
+  while ((size_t)(end - source) < source_len && *end != '\n' && *end != '\r') end++;
+  fprintf(stderr, "  %.*s\n  ", (int)(end - start), start);
+  for (int i = 1; i < col; i++) fputc(' ', stderr);
+  fputs("^\n", stderr);
+}
+
 void tatari_fatal(int exit_code, int line, int col, const char *fmt, ...) {
   va_list ap;
 
@@ -17,6 +40,7 @@ void tatari_fatal(int exit_code, int line, int col, const char *fmt, ...) {
     fprintf(stderr, "（行%d・列%d）", line, col);
   }
   fputc('\n', stderr);
+  print_source_line(line, col);
   exit(exit_code);
 }
 

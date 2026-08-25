@@ -60,13 +60,10 @@ const char *tok_kind_name(TokKind kind) {
   case T_INT: return "INT";
   case T_STR: return "STR";
   case T_NAME: return "NAME";
+  case T_SHIKIGAMI_NAME: return "式神名";
   case T_KICHI: return "吉";
   case T_KYO_BAD: return "凶";
   case T_KYO_VOID: return "虚";
-  case T_IN_SIGN: return "陰";
-  case T_YO_SIGN: return "陽";
-  case T_KEKKAI_OPEN: return "〔";
-  case T_KEKKAI_CLOSE: return "〕";
   case T_HARAUNI_KEGARE_NAKU: return "祓ふに穢れ無く";
   case T_KYUKYU: return "急急如律令";
   case T_OLD_NO_GYOHO: return "之行法";
@@ -105,7 +102,7 @@ void tok_print(const Token *token) {
   printf("%d:%d %-24s", token->line, token->col, tok_kind_name(token->kind));
   if (token->kind == T_INT) {
     printf(" %lld", token->ival);
-  } else if (token->kind == T_STR || token->kind == T_NAME) {
+  } else if (token->kind == T_STR || token->kind == T_NAME || token->kind == T_SHIKIGAMI_NAME) {
     printf(" %s", token->sval);
   } else if (token->kind != T_EOF) {
     printf(" %.*s", (int)token->len, token->lexeme);

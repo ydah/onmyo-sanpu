@@ -129,14 +129,14 @@ static ExecResult exec_stmt(Interp *interp, Env *env, const Stmt *stmt) {
     val_free(&value);
     if (!ok) {
       tatari_fatal(1, stmt->line, stmt->col,
-                   stmt->kind == S_ASSIGN ? "式神『%s』は此の界に在らず" : "式神『%s』は既に此の界に在り",
+                   stmt->kind == S_ASSIGN ? "式神%sは此の界に在らず" : "式神%sは既に此の界に在り",
                    stmt->as.bind.name);
     }
     return flow_result(FLOW_NORMAL);
   }
   case S_RELEASE:
     if (!env_release(env, stmt->as.release.name)) {
-      tatari_fatal(1, stmt->line, stmt->col, "式神『%s』は此の界に在らず", stmt->as.release.name);
+      tatari_fatal(1, stmt->line, stmt->col, "式神%sは此の界に在らず", stmt->as.release.name);
     }
     return flow_result(FLOW_NORMAL);
   case S_TAKUSEN: {
@@ -145,7 +145,7 @@ static ExecResult exec_stmt(Interp *interp, Env *env, const Stmt *stmt) {
     Value value = val_int(input);
     int ok = env_declare(env, stmt->as.takusen.name, &value);
     val_free(&value);
-    if (!ok) tatari_fatal(1, stmt->line, stmt->col, "式神『%s』は既に此の界に在り", stmt->as.takusen.name);
+    if (!ok) tatari_fatal(1, stmt->line, stmt->col, "式神%sは既に此の界に在り", stmt->as.takusen.name);
     return flow_result(FLOW_NORMAL);
   }
   case S_PRINT: {
