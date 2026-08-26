@@ -4,13 +4,24 @@
 
 #include <stdlib.h>
 
+enum { MAX_EXPR_DEPTH = 1024 };
+
 static Expr *new_expr(ExprKind kind, int line, int col) {
   Expr *expr = onmyo_xcalloc(1, sizeof(Expr));
   expr->kind = kind;
   expr->primary = kind == E_INT || kind == E_STR || kind == E_BOOL || kind == E_KYO || kind == E_VAR;
+  expr->depth = 1;
   expr->line = line;
   expr->col = col;
   return expr;
+}
+
+static void set_composite_depth(Expr *expr, int child_depth) {
+  /* ponytail: 再帰ASTの安全上限。明示スタック化するまで引き上げない。 */
+  if (child_depth >= MAX_EXPR_DEPTH) {
+    tatari_fatal(2, expr->line, expr->col, "式が深過ぎる。式神に憑かせて分かつべし");
+  }
+  expr->depth = child_depth + 1;
 }
 
 static Stmt *new_stmt(StmtKind kind, int line, int col) {
@@ -57,6 +68,7 @@ Expr *ast_expr_var(const char *name, int line, int col) {
 
 Expr *ast_expr_binop(TokKind op, Expr *lhs, Expr *rhs, int line, int col) {
   Expr *expr = new_expr(E_BINOP, line, col);
+  set_composite_depth(expr, lhs->depth > rhs->depth ? lhs->depth : rhs->depth);
   expr->as.binop.op = op;
   expr->as.binop.lhs = lhs;
   expr->as.binop.rhs = rhs;
@@ -65,6 +77,7 @@ Expr *ast_expr_binop(TokKind op, Expr *lhs, Expr *rhs, int line, int col) {
 
 Expr *ast_expr_logic(TokKind op, Expr *lhs, Expr *rhs, int line, int col) {
   Expr *expr = new_expr(E_LOGIC, line, col);
+  set_composite_depth(expr, lhs->depth > rhs->depth ? lhs->depth : rhs->depth);
   expr->as.logic.op = op;
   expr->as.logic.lhs = lhs;
   expr->as.logic.rhs = rhs;
@@ -73,12 +86,18 @@ Expr *ast_expr_logic(TokKind op, Expr *lhs, Expr *rhs, int line, int col) {
 
 Expr *ast_expr_not(Expr *inner, int line, int col) {
   Expr *expr = new_expr(E_NOT, line, col);
+  set_composite_depth(expr, inner->depth);
   expr->as.not_expr.expr = inner;
   return expr;
 }
 
 Expr *ast_expr_call(const char *name, Expr **args, int nargs, int line, int col) {
   Expr *expr = new_expr(E_CALL, line, col);
+  int child_depth = 0;
+  for (int i = 0; i < nargs; i++) {
+    if (args[i]->depth > child_depth) child_depth = args[i]->depth;
+  }
+  set_composite_depth(expr, child_depth);
   expr->as.call.name = onmyo_xstrdup(name);
   expr->as.call.args = args;
   expr->as.call.nargs = nargs;

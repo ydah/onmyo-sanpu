@@ -40,6 +40,7 @@ typedef enum {
 struct Expr {
   ExprKind kind;
   int primary;
+  int depth;
   int line;
   int col;
   char *int_lexeme;

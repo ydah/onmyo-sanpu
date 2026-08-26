@@ -79,4 +79,8 @@ else
 fi
 rm -f "$CASES/ast.out.tmp" "$CASES/ast.err.tmp"
 
+if ! "$ROOT/test/depth.sh"; then
+  fail=1
+fi
+
 exit "$fail"

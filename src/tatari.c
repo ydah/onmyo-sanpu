@@ -18,7 +18,12 @@ static void print_source_line(int line, int col) {
   const char *start = source;
   int current = 1;
   while ((size_t)(start - source) < source_len && current < line) {
-    if (*start++ == '\n') current++;
+    if (*start == '\r' || *start == '\n') {
+      if (*start++ == '\r' && (size_t)(start - source) < source_len && *start == '\n') start++;
+      current++;
+    } else {
+      start++;
+    }
   }
   if (current != line) return;
   const char *end = start;

@@ -10,7 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct { const Program *program; } Interp;
+typedef struct {
+  const Program *program;
+  int call_depth;
+} Interp;
+
+enum { MAX_CALL_DEPTH = 512 };
 
 static Value eval_expr(Interp *interp, Env *env, const Expr *expr);
 static ExecResult exec_block(Interp *interp, Env *env, Stmt **body, int nbody);
@@ -55,6 +60,11 @@ static Value eval_call(Interp *interp, Env *caller_env, const Expr *expr) {
   if (rite->nparams != expr->as.call.nargs) {
     tatari_fatal(1, expr->line, expr->col, "行法『%s』の賜り物の数が合わぬ", expr->as.call.name);
   }
+  /* ponytail: Cスタックの安全上限。呼出フレームをヒープ化するまで引き上げない。 */
+  if (interp->call_depth >= MAX_CALL_DEPTH) {
+    tatari_fatal(1, expr->line, expr->col, "行法の呼出が深過ぎる");
+  }
+  interp->call_depth++;
 
   Env *env = env_new(NULL);
   for (int i = 0; i < expr->as.call.nargs; i++) {
@@ -69,6 +79,7 @@ static Value eval_call(Interp *interp, Env *caller_env, const Expr *expr) {
 
   ExecResult result = exec_block(interp, env, rite->body, rite->nbody);
   env_free(env);
+  interp->call_depth--;
   if (result.flow == FLOW_RETURN) return result.ret;
   if (result.flow != FLOW_NORMAL) {
     val_free(&result.ret);
@@ -256,7 +267,7 @@ static ExecResult exec_block(Interp *interp, Env *env, Stmt **body, int nbody) {
 }
 
 void interp_execute(const Program *program) {
-  Interp interp = {program};
+  Interp interp = {program, 0};
   const Rite *entry = entry_rite(program);
   if (entry->nparams != 0) tatari_fatal(1, entry->line, entry->col, "開白に賜り物あるべからず");
   Env *env = env_new(NULL);

@@ -8,8 +8,11 @@ typedef struct {
   const TokenArray *tokens;
   int pos;
   int loop_depth;
+  int block_depth;
   TokKind expr_stop;
 } Parser;
+
+enum { MAX_BLOCK_DEPTH = 512 };
 
 typedef struct { Stmt **items; int count; int cap; } StmtVec;
 typedef struct { Expr **items; int count; int cap; } ExprVec;
@@ -421,10 +424,16 @@ static Stmt *parse_stmt(Parser *parser) {
 }
 
 static void parse_block_until(Parser *parser, StmtVec *body, const TokKind *terms, int nterms) {
+  /* ponytail: 再帰構文解析の安全上限。明示スタック化するまで引き上げない。 */
+  if (parser->block_depth >= MAX_BLOCK_DEPTH) {
+    parse_error(peek(parser), "段の入れ子が深過ぎる。行法に分かつべし");
+  }
+  parser->block_depth++;
   while (!is_term(parser, terms, nterms)) {
     if (check(parser, T_EOF)) parse_error(peek(parser), "段が閉じられぬ");
     stmt_vec_push(body, parse_stmt(parser));
   }
+  parser->block_depth--;
 }
 
 static Rite *parse_rite(Parser *parser) {
@@ -449,7 +458,7 @@ static Rite *parse_rite(Parser *parser) {
 }
 
 Program *parse_program(const TokenArray *tokens) {
-  Parser parser = {tokens, 0, 0, T_EOF};
+  Parser parser = {tokens, 0, 0, 0, T_EOF};
   RiteVec rites = {0};
   while (!check(&parser, T_SHICCHI_JOJU)) {
     if (check(&parser, T_EOF)) parse_error(peek(&parser), "祭文は『悉地成就』で終わらねばならぬ");
