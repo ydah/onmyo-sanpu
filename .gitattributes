@@ -1,1 +1,3 @@
 test/cases/lex_chu_crlf.fu binary
+test/cases/tatari_nul.fu binary
+test/cases/tatari_takusen_nul.in binary

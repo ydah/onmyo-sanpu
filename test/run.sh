@@ -40,6 +40,14 @@ for fu in "$CASES"/*.fu; do
   elif [ -f "$expected_err" ] && ! diff -u "$expected_err" "$err"; then
     echo "FAIL $name: error output differs"
     fail=1
+  elif grep -Eq 'Sanitizer|runtime error:' "$err"; then
+    echo "FAIL $name: sanitizer diagnostic"
+    cat "$err"
+    fail=1
+  elif [ "$expected_code" -ne 0 ] && ! grep -q '^祟り：' "$err"; then
+    echo "FAIL $name: expected diagnostic missing"
+    cat "$err"
+    fail=1
   elif [ "$expected_code" -eq 0 ] && [ -s "$err" ]; then
     echo "FAIL $name: unexpected error output"
     cat "$err"

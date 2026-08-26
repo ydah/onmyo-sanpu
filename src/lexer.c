@@ -101,6 +101,9 @@ static void advance_bytes(const char *src, size_t len, size_t *pos, int *line, i
   size_t end = *pos + n;
   while (*pos < end && *pos < len) {
     unsigned char ch = (unsigned char)src[*pos];
+    if ((ch < 0x20 && ch != '\t' && ch != '\r' && ch != '\n') || ch == 0x7F) {
+      tatari_fatal(2, *line, *col, "字句に用ゐ得ぬ文字なり");
+    }
     if (ch == '\n') {
       (*line)++;
       *col = 1;
