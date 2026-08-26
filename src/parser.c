@@ -210,8 +210,11 @@ static Expr *make_predicate(const Token *pred, Expr *lhs, Expr *rhs) {
 
 static Expr *parse_chain(Parser *parser) {
   Expr *lhs = parse_primary(parser);
-  if (peek(parser)->kind != parser->expr_stop && is_case(peek(parser)->kind) &&
-      is_primary_start(peek_n(parser, 1)->kind)) {
+  int starts_predicate = is_case(peek(parser)->kind) &&
+      is_primary_start(peek_n(parser, 1)->kind) &&
+      (peek(parser)->kind != parser->expr_stop ||
+       (is_case(peek_n(parser, 2)->kind) && find_frame(peek_n(parser, 3)->kind) != NULL));
+  if (starts_predicate) {
     TokKind case1 = consume_case(parser);
     Expr *rhs = parse_primary(parser);
     TokKind case2 = consume_case(parser);
@@ -434,7 +437,7 @@ static Rite *parse_rite(Parser *parser) {
       str_vec_push(&params, onmyo_xstrdup(param->sval));
       if (!match(parser, T_TO)) break;
     }
-    match(parser, T_WO);
+    consume(parser, T_WO, "賜り物の後に『を』が要る");
     consume(parser, T_TAMAWARITE, "仮引数は『賜りて』で結ぶ");
   }
   consume(parser, T_SHU_SURUNI, "行法本文には『修するに』が要る");

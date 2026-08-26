@@ -3,8 +3,11 @@
 #include "env.h"
 #include "tatari.h"
 
+#include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct { const Program *program; } Interp;
@@ -141,8 +144,17 @@ static ExecResult exec_stmt(Interp *interp, Env *env, const Stmt *stmt) {
     }
     return flow_result(FLOW_NORMAL);
   case S_TAKUSEN: {
-    long long input = 0;
-    if (scanf("%lld", &input) != 1) tatari_fatal(1, stmt->line, stmt->col, "託宣を得られぬ");
+    char text[64];
+    if (fgets(text, sizeof(text), stdin) == NULL ||
+        (strchr(text, '\n') == NULL && !feof(stdin))) {
+      tatari_fatal(1, stmt->line, stmt->col, "託宣を得られぬ");
+    }
+    errno = 0;
+    char *end = NULL;
+    long long input = strtoll(text, &end, 10);
+    if (end == text || errno == ERANGE) tatari_fatal(1, stmt->line, stmt->col, "託宣を得られぬ");
+    while (isspace((unsigned char)*end)) end++;
+    if (*end != '\0') tatari_fatal(1, stmt->line, stmt->col, "託宣を得られぬ");
     Value value = val_int(input);
     int ok = env_declare(env, stmt->as.takusen.name, &value);
     val_free(&value);

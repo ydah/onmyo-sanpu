@@ -1,7 +1,7 @@
 #!/bin/sh
 set -u
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 ONMYO="$ROOT/onmyo"
 CASES="$ROOT/test/cases"
 
@@ -40,6 +40,10 @@ for fu in "$CASES"/*.fu; do
   elif [ -f "$expected_err" ] && ! diff -u "$expected_err" "$err"; then
     echo "FAIL $name: error output differs"
     fail=1
+  elif [ "$expected_code" -eq 0 ] && [ -s "$err" ]; then
+    echo "FAIL $name: unexpected error output"
+    cat "$err"
+    fail=1
   else
     echo "PASS $name"
   fi
@@ -48,6 +52,7 @@ for fu in "$CASES"/*.fu; do
 done
 
 if "$ONMYO" --tokens "$CASES/lex_taiin.fu" > "$CASES/tokens.out.tmp" 2> "$CASES/tokens.err.tmp" &&
+   [ ! -s "$CASES/tokens.err.tmp" ] &&
    diff -u "$CASES/cli_tokens.expected" "$CASES/tokens.out.tmp"; then
   echo "PASS cli_tokens"
 else
@@ -57,6 +62,7 @@ fi
 rm -f "$CASES/tokens.out.tmp" "$CASES/tokens.err.tmp"
 
 if "$ONMYO" --ast "$CASES/chain.fu" > "$CASES/ast.out.tmp" 2> "$CASES/ast.err.tmp" &&
+   [ ! -s "$CASES/ast.err.tmp" ] &&
    diff -u "$CASES/cli_ast.expected" "$CASES/ast.out.tmp"; then
   echo "PASS cli_ast"
 else
